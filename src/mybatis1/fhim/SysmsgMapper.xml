@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SysmsgMapper">
+	
+	<!--表名 -->
+	<sql id="tableName">
+		IM_SYSMSG
+	</sql>
+	
+	<!--个人状态表名 -->
+	<sql id="statetableName">
+		IM_IMSTATE
+	</sql>
+	
+	<!--表名(系统用户) -->
+	<sql id="usertableName">
+		SYS_USER
+	</sql>
+	
+	<!--表名(用户头像) -->
+	<sql id="phototableName">
+		SYS_USERPHOTO
+	</sql>
+	
+	<!--数据字典表名 -->
+	<sql id="dicTableName">
+		SYS_DICTIONARIES
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		f.USERNAME,	
+		f.FROMUSERNAME,	
+		f.CTIME,	
+		f.REMARK,	
+		f.TYPE,	
+		f.CONTENT,	
+		f.ISDONE,	
+		f.DTIME,
+		f.QGROUP_ID,
+		f.DREAD,
+		f.SYSMSG_ID
+	</sql>
+	
+	<!-- 字段用于新增 -->
+	<sql id="Field2">
+		USERNAME,	
+		FROMUSERNAME,	
+		CTIME,	
+		REMARK,	
+		TYPE,	
+		CONTENT,	
+		ISDONE,	
+		DTIME,
+		QGROUP_ID,
+		DREAD,
+		SYSMSG_ID
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+		#{USERNAME},	
+		#{FROMUSERNAME},	
+		#{CTIME},	
+		#{REMARK},	
+		#{TYPE},	
+		#{CONTENT},	
+		#{ISDONE},	
+		#{DTIME},
+		#{QGROUP_ID},
+		#{DREAD},
+		#{SYSMSG_ID}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into 
+	<include refid="tableName"></include>
+		(
+	<include refid="Field2"></include>
+		) values (
+	<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			SYSMSG_ID = #{SYSMSG_ID}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+		set 
+			CONTENT = #{CONTENT},
+			DTIME = #{DTIME},
+			ISDONE = #{ISDONE}
+		where 
+			SYSMSG_ID = #{SYSMSG_ID}
+	</update>
+	
+	<!-- 设置已读 -->
+	<update id="read" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+		set 
+			DREAD = '1'
+		where 
+			USERNAME = #{USERNAME}
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include> f
+		where 
+			f.SYSMSG_ID = #{SYSMSG_ID}
+	</select>
+	
+	<!-- 获取未读总数 -->
+	<select id="getMsgCount" parameterType="pd" resultType="pd">
+		select 
+			count(SYSMSG_ID) msgCount
+		from 
+		<include refid="tableName"></include>
+		where 
+			DREAD = '0'
+		and
+			USERNAME = #{USERNAME} 
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include> f
+		where
+			f.USERNAME = #{pd.USERNAME}
+		and
+			ISDONE = 'yes'
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select
+			<include refid="Field"></include>,
+			s.AUTOGRAPH,
+			p.PHOTO2,
+			u.NAME
+		from 
+		<include refid="tableName"></include> f
+		left join
+		<include refid="statetableName"></include> s
+		on
+			f.FROMUSERNAME = s.USERNAME
+		left join
+		<include refid="usertableName"></include> u
+		on
+			f.FROMUSERNAME = u.USERNAME
+		left join
+			<include refid="phototableName"></include> p 
+		on
+			f.FROMUSERNAME = p.USERNAME
+		where
+			f.USERNAME = #{USERNAME}
+		order by f.ISDONE, f.CTIME desc 
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			SYSMSG_ID in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- fh1347845688qq(青苔) -->
+</mapper>

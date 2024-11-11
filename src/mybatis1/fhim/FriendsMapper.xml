@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="FriendsMapper">
+	
+	<!--表名 -->
+	<sql id="tableName">
+		IM_FRIENDS
+	</sql>
+	
+	<!--表名(好友分组) -->
+	<sql id="fgrouptableName">
+		IM_FGROUP
+	</sql>
+	
+	<!--表名(状态) -->
+	<sql id="statetableName">
+		IM_IMSTATE
+	</sql>
+	
+	<!--表名(用户头像) -->
+	<sql id="phototableName">
+		SYS_USERPHOTO
+	</sql>
+	
+	<!--表名(系统用户) -->
+	<sql id="usertableName">
+		SYS_USER
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		f.USERNAME,	
+		f.FUSERNAME,	
+		f.CTIME,	
+		f.ALLOW,	
+		f.FRIENDS_ID,
+		f.FGROUP_ID,
+		f.DTIME,
+		f.BZ
+	</sql>
+	
+	<!-- 字段用于新增 -->
+	<sql id="Field2">
+		USERNAME,	
+		FUSERNAME,	
+		CTIME,	
+		ALLOW,	
+		FRIENDS_ID,
+		FGROUP_ID,
+		DTIME,
+		BZ
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+		#{USERNAME},	
+		#{FUSERNAME},	
+		#{CTIME},	
+		#{ALLOW},	
+		#{FRIENDS_ID},
+		#{FGROUP_ID},
+		#{DTIME},
+		#{BZ}
+	</sql>
+	
+	<!-- 新增 -->
+	<insert id="save" parameterType="pd">
+		insert into 
+	<include refid="tableName"></include>
+		(
+	<include refid="Field2"></include>
+		) values (
+	<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 删除 -->
+	<delete id="delete" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			FRIENDS_ID = #{FRIENDS_ID}
+	</delete>
+	
+	<!-- 拉黑 -->
+	<delete id="pullblack" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			FUSERNAME = #{USERNAME}
+		and
+			USERNAME = #{FUSERNAME}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+		set 
+			FGROUP_ID = #{FGROUP_ID}
+		where 
+			FRIENDS_ID = #{FRIENDS_ID}
+	</update>
+	
+	<!-- 修改同意状态 -->
+	<update id="editAllow" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+		set 
+			ALLOW = #{ALLOW},
+			DTIME = #{DTIME}
+		where 
+			USERNAME = #{FUSERNAME}
+		and
+			FUSERNAME = #{USERNAME}
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include> f
+		where 
+			f.FRIENDS_ID = #{FRIENDS_ID}
+	</select>
+	
+	<!-- 获取我的某个好友-->
+	<select id="findMyFriend" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include> f
+		where 
+			f.FUSERNAME = #{FUSERNAME}
+		and
+			f.USERNAME = #{USERNAME}
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		select
+			<include refid="Field"></include>,
+			u.NAME,
+			g.NAME GNAME,
+			p.PHOTO2
+		from 
+			<include refid="tableName"></include> f
+		left join 
+			<include refid="usertableName"></include> u
+		on
+			f.FUSERNAME = u.USERNAME
+		left join 
+			<include refid="fgrouptableName"></include> g
+		on
+			f.FGROUP_ID = g.FGROUP_ID
+		left join
+			<include refid="phototableName"></include> p 
+		on
+			f.FUSERNAME = p.USERNAME
+		where 1=1
+		<if test="pd.keywords!= null and pd.keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+					f.FUSERNAME LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+					or 
+					u.NAME LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				)
+		</if>
+		<if test="pd.lastStart!=null and pd.lastStart!=''"><!-- 开始时间检索 -->
+			and f.CTIME &gt;= #{pd.lastStart} 
+		</if>
+		<if test="pd.lastEnd!=null and pd.lastEnd!=''"><!-- 结束时间检索 -->
+			and f.CTIME &lt;= #{pd.lastEnd} 
+		</if>
+		<if test="pd.FGROUP_ID!=null and pd.FGROUP_ID!=''"><!-- 分组检索 -->
+			and f.FGROUP_ID = #{pd.FGROUP_ID} 
+		</if>
+		and
+			f.USERNAME = #{pd.USERNAME}
+		order by f.CTIME desc
+	</select>
+	
+	<!-- 列表(全部自己的好友) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select
+			<include refid="Field"></include>,
+			u.NAME,
+			g.NAME GNAME,
+			p.PHOTO2,
+			s.ONLINE,
+			s.AUTOGRAPH
+		from 
+			<include refid="tableName"></include> f
+		left join
+			<include refid="usertableName"></include> u
+		on
+			f.FUSERNAME = u.USERNAME
+		left join
+			<include refid="fgrouptableName"></include> g
+		on
+			f.FGROUP_ID = g.FGROUP_ID
+		left join
+			<include refid="phototableName"></include> p 
+		on
+			f.FUSERNAME = p.USERNAME
+		left join
+			<include refid="statetableName"></include> s 
+		on
+			f.FUSERNAME = s.USERNAME
+		where
+			f.USERNAME = #{USERNAME}
+		and
+			f.ALLOW = 'yes'
+	</select>
+	
+	<!-- 获取某个好友详细信息 -->
+	<select id="getTheFriend" parameterType="pd" resultType="pd">
+		select
+			<include refid="Field"></include>,
+			u.NAME,
+			g.FGROUP_ID,
+			p.PHOTO2,
+			s.ONLINE,
+			s.AUTOGRAPH
+		from 
+			<include refid="tableName"></include> f
+		left join
+			<include refid="usertableName"></include> u
+		on
+			f.FUSERNAME = u.USERNAME
+		left join
+			<include refid="fgrouptableName"></include> g
+		on
+			f.FGROUP_ID = g.FGROUP_ID
+		left join
+			<include refid="phototableName"></include> p 
+		on
+			f.FUSERNAME = p.USERNAME
+		left join
+			<include refid="statetableName"></include> s 
+		on
+			f.FUSERNAME = s.USERNAME
+		where
+			f.USERNAME = #{FUSERNAME}
+		and
+			f.FUSERNAME = #{USERNAME}
+	</select>
+	
+	<!-- 列表(全部有自己好友的用户) -->
+	<select id="listAllFri" parameterType="pd" resultType="pd">
+		select
+			f.USERNAME,
+			u.NAME
+		from 
+			<include refid="tableName"></include> f
+		left join
+			<include refid="usertableName"></include> u
+		on
+			f.FUSERNAME = u.USERNAME
+		where
+			f.FUSERNAME = #{USERNAME}
+		and
+			f.ALLOW = 'yes'
+	</select>
+	
+	<!-- 列表(添加好友页面检索好友) -->
+	<select id="listAllToSearch" parameterType="pd" resultType="pd">
+		select
+			u.NAME,
+			u.USERNAME,
+			p.PHOTO1,
+			p.PHOTO2
+		from 
+			<include refid="usertableName"></include> u
+		left join
+			<include refid="phototableName"></include> p 
+		on
+			u.USERNAME = p.USERNAME
+		where
+			(
+				u.USERNAME LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+				or
+				u.NAME LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			)
+		and
+			u.USERNAME != #{USERNAME}
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			FRIENDS_ID in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- fh1347845688qq(青苔) -->
+</mapper>
